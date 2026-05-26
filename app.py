@@ -16,7 +16,7 @@ st.set_page_config(
     layout="centered", # Mobile ke liye centered layout behtar hai
     initial_sidebar_state="collapsed"
 )
-
+st.markdown('<meta name="google-site-verification" content="-ZXWk9Vi3RlHKTeGOhiCF21kYDV_vQyd5NWh9n5yB54" />', unsafe_allow_html=True)
 # --- Custom CSS for Styling ---
 st.markdown("""
     <style>

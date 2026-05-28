@@ -13,12 +13,12 @@ import os
 st.set_page_config(
     page_title="Rana PDF Converter Pro | Best Free PDF Tools Online",
     page_icon="📄",
-    layout="centered", # Mobile ke liye centered layout behtar hai
-    initial_sidebar_state="collapsed",
-    menu_items={
-        'About': '<meta name="google-site-verification" content="-ZXWk9Vi3RlHKTeGOhiCF21kYDV_vQyd5NWh9n5yB54" />'
-    }
+    layout="centered", 
+    initial_sidebar_state="collapsed"
 )
+
+# ISS LINE KO DHAYAN SE DEKHEIN - Yeh direct head mein tag daal rahi hai
+st.html('<head><meta name="google-site-verification" content="-ZXWk9Vi3RlHKTeGOhiCF21kYDV_vQyd5NWh9n5yB54" /></head>')
 
 # --- Custom CSS for Styling ---
 st.markdown("""
@@ -104,13 +104,8 @@ elif option == "PDF Merger":
             merger.write(output)
             st.download_button("📥 Download Merged PDF", output.getvalue(), "merged_rana.pdf")
 
-# ---------------- BAAQI TOOLS ----------------
-# Isi tarah aap Protect PDF aur Text to PDF bhi add kar sakte hain logic wahi rahegi bas io.BytesIO() use karna hoga.
-
-
 # --- WEB KE NEECHU VIEW SHOW KARNE KE LIYE ---
 st.markdown("---")
-# Streamlit Cloud par view counter display karne ke liye simple text and container widget
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     st.metric(label="📊 App Status & Live Analytics View", value="Active / Live ✅")

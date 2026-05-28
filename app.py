@@ -14,23 +14,27 @@ st.set_page_config(
     page_title="Rana PDF Converter Pro | Best Free PDF Tools Online",
     page_icon="📄",
     layout="centered", # Mobile ke liye centered layout behtar hai
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
+    menu_items={
+        'About': '<meta name="google-site-verification" content="-ZXWk9Vi3RlHKTeGOhiCF21kYDV_vQyd5NWh9n5yB54" />'
+    }
 )
-st.html('<meta name="google-site-verification" content="-ZXWk9Vi3RlHKTeGOhiCF21kYDV_vQyd5NWh9n5yB54" />')
+
 # --- Custom CSS for Styling ---
 st.markdown("""
     <style>
     .main { text-align: center; }
     .stButton>button { width: 100%; border-radius: 10px; height: 3em; background-color: #3498db; color: white; }
     h1 { color: #3498db; font-family: 'Roboto', sans-serif; }
+    div[data-testid="stMetricValue"] { font-size: 24px; color: #2ecc71; text-align: center; }
+    div[data-testid="stMetricLabel"] { font-size: 14px; text-align: center; }
     </style>
     """, unsafe_allow_html=True)
 
 # --- Header & SEO Keywords ---
 st.title("📄 Rana PDF Converter Pro")
 st.markdown("""
-**Sabse Tez aur Free PDF Tools!** 
-Convert PDF to Excel, Word, Merge PDFs, and Protect Files. 
+**Sabse Tez aur Free PDF Tools!** Convert PDF to Excel, Word, Merge PDFs, and Protect Files. 
 *Mobile-friendly, No installation required.*
 """)
 
@@ -102,6 +106,14 @@ elif option == "PDF Merger":
 
 # ---------------- BAAQI TOOLS ----------------
 # Isi tarah aap Protect PDF aur Text to PDF bhi add kar sakte hain logic wahi rahegi bas io.BytesIO() use karna hoga.
+
+
+# --- WEB KE NEECHU VIEW SHOW KARNE KE LIYE ---
+st.markdown("---")
+# Streamlit Cloud par view counter display karne ke liye simple text and container widget
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    st.metric(label="📊 App Status & Live Analytics View", value="Active / Live ✅")
 
 st.sidebar.markdown("---")
 st.sidebar.write("Developed by: **Rana Abubakar**")

@@ -17,9 +17,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# ISS LINE KO DHAYAN SE DEKHEIN - Yeh direct head mein tag daal rahi hai
-st.html('<head><meta name="google-site-verification" content="-ZXWk9Vi3RlHKTeGOhiCF21kYDV_vQyd5NWh9n5yB54" /></head>')
-
 # --- Custom CSS for Styling ---
 st.markdown("""
     <style>
@@ -55,9 +52,10 @@ if option == "Image to PDF":
             image = Image.open(img).convert('RGB')
             img_list.append(image)
         
-        pdf_output = io.BytesIO()
-        img_list[0].save(pdf_output, format="PDF", save_all=True, append_images=img_list[1:])
-        st.download_button("📥 Download PDF", data=pdf_output.getvalue(), file_name="Rana_Images.pdf")
+        if img_list:
+            pdf_output = io.BytesIO()
+            img_list[0].save(pdf_output, format="PDF", save_all=True, append_images=img_list[1:])
+            st.download_button("📥 Download PDF", data=pdf_output.getvalue(), file_name="Rana_Images.pdf")
 
 # ---------------- 2. PDF TO EXCEL/WORD ----------------
 elif option == "PDF to Excel/Word":
@@ -79,13 +77,16 @@ elif option == "PDF to Excel/Word":
                         output = io.BytesIO()
                         df.to_excel(output, index=False)
                         st.download_button("📥 Download Excel", output.getvalue(), "converted.xlsx")
+                    else:
+                        st.warning("Is PDF mein koi table nahi mila.")
             
             elif format_type == "Word":
                 doc = Document()
                 with pdfplumber.open(uploaded_pdf) as pdf:
                     for page in pdf.pages:
                         text = page.extract_text()
-                        if text: doc.add_paragraph(text)
+                        if text: 
+                            doc.add_paragraph(text)
                 output = io.BytesIO()
                 doc.save(output)
                 st.download_button("📥 Download Word Doc", output.getvalue(), "converted.docx")
@@ -103,6 +104,13 @@ elif option == "PDF Merger":
             output = io.BytesIO()
             merger.write(output)
             st.download_button("📥 Download Merged PDF", output.getvalue(), "merged_rana.pdf")
+    elif merge_files and len(merge_files) < 2:
+        st.info("Mege karne ke liye kam az kam 2 files select karein.")
+
+# ---------------- BAQI TOOLS (PLACEHOLDERS) ----------------
+else:
+    st.header(f"🛠️ {option}")
+    st.info(f"Yeh tool ({option}) jald hi mukammal active ho jayega!")
 
 # --- WEB KE NEECHU VIEW SHOW KARNE KE LIYE ---
 st.markdown("---")

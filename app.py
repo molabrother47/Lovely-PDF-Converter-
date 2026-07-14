@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 from PIL import Image
+import numpy as np
+import cv2  # Advanced Image Processing
 from fpdf import FPDF
 import pdfplumber
 from PyPDF2 import PdfMerger, PdfReader, PdfWriter
@@ -8,401 +10,299 @@ from docx import Document
 import fitz  # PyMuPDF
 import io
 import os
-import random  # Dynamics simulate karne ke liye
+import random
+
+# --- App Page Config ---
+st.set_page_config(page_title="Multi-Tool PDF & CamScanner App", layout="wide")
 
 # --- Secure Analytics Tracking ---
 ANALYTICS_FILE = "analytics_data.txt"
 
 def get_analytics():
-    """Saves and increments traffic, conversions and active sessions."""
-    # Default values
+    """Saves and increments traffic, conversions and active sessions safely."""
     default_data = {"traffic": 100, "completed": 45, "users": 3}
     
     if not os.path.exists(ANALYTICS_FILE):
-        with open(ANALYTICS_FILE, "w") as f:
-            f.write(f"{default_data['traffic']},{default_data['completed']},{default_data['users']}")
-        return default_data
+        try:
+            with open(ANALYTICS_FILE, "w") as f:
+                f.write(f"{default_data['traffic']},{default_data['completed']},{default_data['users']}")
+            return default_data
+        except Exception:
+            return default_data
     else:
         try:
             with open(ANALYTICS_FILE, "r+") as f:
                 data_str = f.read().strip()
-                parts = data_str.split(",")
+                if not data_str:
+                    parts = ["100", "45", "3"]
+                else:
+                    parts = data_str.split(",")
+                
                 traffic = int(parts[0]) + 1
                 completed = int(parts[1])
-                # Live dynamic users simulator (1-5 range)
-                users = random.randint(2, 8)
+                users = random.randint(2, 8)  # Live dynamic users simulator
                 
-                # Save back updated values
                 f.seek(0)
                 f.write(f"{traffic},{completed},{users}")
                 f.truncate()
-                return {"traffic": traffic, "completed": completed, "users": users}
-        except:
+                
+            return {"traffic": traffic, "completed": completed, "users": users}
+        except Exception:
             return default_data
 
-def increment_completed_task():
-    """Increments the completed tasks when a user successfully processes a file."""
-    if os.path.exists(ANALYTICS_FILE):
-        try:
-            with open(ANALYTICS_FILE, "r+") as f:
-                data_str = f.read().strip().split(",")
-                traffic = int(data_str[0])
-                completed = int(data_str[1]) + 1
-                users = int(data_str[2])
-                
-                f.seek(0)
-                f.write(f"{traffic},{completed},{users}")
-                f.truncate()
-        except:
-            pass
-
-# Fetch current analytics
+# Run analytics tracking safely
 analytics = get_analytics()
 
-# --- Page Configuration ---
-st.set_page_config(
-    page_title="Rana PDF Converter Pro | Free Online PDF Tools",
-    page_icon="📄",
-    layout="centered", 
-    initial_sidebar_state="collapsed"  # Mobile par automatic hide rakhega
-)
-
-# --- Custom Styling for Mobile First UI ---
+# --- Custom CSS (Yellow Sidebar Navigation & Colorful Service Boxes) ---
 st.markdown("""
-    <style>
-    .main { text-align: center; }
-    .stButton>button { 
-        width: 100%; 
-        border-radius: 8px; 
-        height: 3.2em; 
-        background-color: #1a73e8; 
-        color: white; 
-        font-weight: bold;
-        border: none;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        transition: all 0.3s ease;
-    }
-    .stButton>button:hover {
-        background-color: #1557b0;
-        transform: translateY(-1px);
-    }
-    h1 { color: #1a73e8; font-family: 'Helvetica Neue', Arial, sans-serif; text-align: center; font-weight: 800; }
-    .dev-by { text-align: center; font-size: 1.1em; color: #5f6368; font-weight: bold; margin-top: -10px; margin-bottom: 20px; }
-    div[data-testid="stMetricValue"] { font-size: 22px !important; color: #1a73e8 !important; text-align: center; font-weight: bold; }
-    div[data-testid="stMetricLabel"] { font-size: 13px !important; text-align: center; font-weight: 600; }
-    .hero-container {
-        padding: 20px;
-        border-radius: 12px;
-        background-color: #f8f9fa;
-        border: 1px solid #dadce0;
-        margin-bottom: 20px;
+<style>
+    /* Yellow background and bold black text for Home, About, Services in Sidebar */
+    .nav-item {
+        background-color: #FFD700 !important; /* Premium Gold/Yellow Fill */
+        color: #000000 !important;
+        font-weight: 900 !important;
+        font-size: 16px !important;
+        padding: 12px 20px;
+        border-radius: 8px;
         text-align: center;
+        margin-bottom: 12px;
+        display: block;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        text-transform: uppercase;
+        border: 2px solid #E6B800;
     }
-    .main-nav-box {
-        padding: 15px;
-        border-radius: 12px;
-        background-color: #e8f0fe;
-        border: 1px solid #aecbfa;
-        margin-bottom: 25px;
+    
+    /* Services Styling - Horizontal Row alignment */
+    .service-box {
+        padding: 20px;
+        border-radius: 10px;
+        font-weight: bold;
+        font-size: 18px;
+        text-align: center;
+        color: white !important;
+        margin: 10px 0px;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.15);
+        transition: transform 0.2s;
     }
-    </style>
-    """, unsafe_allow_html=True)
-
-# --- Header & Developer Identity ---
-st.markdown("<h1>RANA PDF CONVERTER</h1>", unsafe_allow_html=True)
-st.markdown("<div class='dev-by'>DEVELOPED BY: RANA ABUBAKER</div>", unsafe_allow_html=True)
-
-# --- Hero Description Box ---
-st.markdown("""
-<div class="hero-container">
-    <p style="font-size: 1.05em; color: #3c4043; margin: 0; font-weight: 500;">
-        Fast, private, and secure browser-based document utilities. No installations, no limits.
-    </p>
-</div>
+    .service-box:hover {
+        transform: scale(1.03);
+    }
+    .img-to-pdf { background: linear-gradient(135deg, #FF416C, #FF4B2B); } /* Vibrant Red/Pink */
+    .txt-to-pdf { background: linear-gradient(135deg, #17EAD9, #6078EA); } /* Cool Blue */
+    .excel-to-pdf { background: linear-gradient(135deg, #11998e, #38ef7d); } /* Emerald Green */
+</style>
 """, unsafe_allow_html=True)
 
-# --- Main Page Quick Navigation (Solving Mobile Navigation Issue) ---
-st.markdown("""
-<div style="text-align: center; margin-bottom: 10px;">
-    <span style="background-color: #1a73e8; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold;">
-        MOBILE FRIENDLY NAVIGATION
-    </span>
-</div>
-""", unsafe_allow_html=True)
+# --- Sidebar ---
+st.sidebar.title("Navigation")
+st.sidebar.markdown('<div class="nav-item">🏠 HOME</div>', unsafe_allow_html=True)
+st.sidebar.markdown('<div class="nav-item">ℹ️ ABOUT</div>', unsafe_allow_html=True)
+st.sidebar.markdown('<div class="nav-item">🛠️ SERVICES</div>', unsafe_allow_html=True)
 
-# Main screen par hi dynamic menu select box de diya taake user ko sidebar dhoondna na pare
-tool_choice = st.selectbox(
-    "👉 Select a PDF Tool to start processing immediately:",
-    [
-        "Home / About Services",
-        "Image to PDF Converter", 
-        "Text to PDF Compiler", 
-        "Extract PDF to Excel/Word", 
-        "Merge Multiple PDFs", 
-        "Convert PDF to PNG Image", 
-        "Encrypt & Protect PDF"
-    ]
-)
+# Analytics display in sidebar
+st.sidebar.write("---")
+st.sidebar.subheader("Live Stats")
+st.sidebar.metric("Active Users 👥", analytics["users"])
+st.sidebar.metric("Total Traffic 📈", analytics["traffic"])
 
-st.markdown("---")
+# --- Main App Header ---
+st.title("📄 Advanced Multi-Tool PDF Editor")
+st.write("Professional and high-speed PDF utility software.")
 
-# ==================== MENU DISPATCH LOGIC ====================
+# --- Row of Core Services (Direct Horizontal Presentation) ---
+st.write("### Quick Services")
+col1, col2, col3 = st.columns(3)
 
-# --- HOME PAGE & INFO ---
-if tool_choice == "Home / About Services":
-    col_img, col_info = st.columns([1, 2])
-    with col_img:
-        image_path = "profile.jpg"
-        if os.path.exists(image_path):
-            st.image(image_path, caption="Rana Abubaker", use_container_width=True)
-        else:
-            st.info("👤 Setup note: Place 'profile.jpg' in project folder to display your picture.")
+with col1:
+    st.markdown('<div class="service-box img-to-pdf">🖼️ Image to PDF</div>', unsafe_allow_html=True)
+    # Upload and convert multiple images to PDF
+    img_files = st.file_uploader("Upload Images for PDF:", type=["jpg", "png", "jpeg"], accept_multiple_files=True, key="quick_img")
+    if img_files:
+        if st.button("Convert to PDF 🖼️➡️📄", key="btn_img"):
+            pdf = FPDF()
+            for img_file in img_files:
+                image = Image.open(img_file)
+                # Convert to RGB if RGBA
+                if image.mode == 'RGBA':
+                    image = image.convert('RGB')
+                
+                # Save temporarily to bytes
+                temp_iot = io.BytesIO()
+                image.save(temp_iot, format="JPEG")
+                temp_iot.seek(0)
+                
+                # Add page to PDF
+                pdf.add_page()
+                # Simple full page fit or default positioning
+                pdf.image(temp_iot, x=10, y=10, w=190)
             
-    with col_info:
-        st.markdown("""
-        ### About the Developer
-        Hi, I am **Rana Abubaker**, a full-stack engineer and utility designer. I developed this tool to ensure rapid document conversions directly on client browsers without compromising personal file privacy.
+            pdf_output = pdf.output(dest='S').encode('latin-1')
+            st.download_button("📥 Download PDF", data=pdf_output, file_name="images_converted.pdf", mime="application/pdf")
+    
+with col2:
+    st.markdown('<div class="service-box txt-to-pdf">📝 Text to PDF</div>', unsafe_allow_html=True)
+    txt_file = st.file_uploader("Upload Text File (.txt):", type=["txt"], key="quick_txt")
+    if txt_file:
+        if st.button("Convert to PDF 📝➡️📄", key="btn_txt"):
+            text_data = txt_file.read().decode("utf-8")
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", size=12)
+            # Multi-line text write
+            pdf.multi_cell(0, 10, txt=text_data)
+            pdf_output = pdf.output(dest='S').encode('latin-1')
+            st.download_button("📥 Download PDF", data=pdf_output, file_name="text_converted.pdf", mime="application/pdf")
+    
+with col3:
+    st.markdown('<div class="service-box excel-to-pdf">📊 Excel to PDF</div>', unsafe_allow_html=True)
+    excel_file = st.file_uploader("Upload Excel File:", type=["xlsx", "xls"], key="quick_excel")
+    if excel_file:
+        if st.button("Convert to PDF 📊➡️📄", key="btn_excel"):
+            df = pd.read_excel(excel_file)
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", size=10)
+            
+            # Simple tabular text representation
+            table_str = df.to_string()
+            pdf.multi_cell(0, 10, txt=table_str)
+            
+            pdf_output = pdf.output(dest='S').encode('latin-1')
+            st.download_button("📥 Download PDF", data=pdf_output, file_name="excel_converted.pdf", mime="application/pdf")
+
+
+# --- CamScanner Auto-Aligner & Enhancer Section ---
+st.write("---")
+st.markdown("## 📷 CamScanner Pro (Auto-Align & Scan Optimizer)")
+st.info("Directly capture images from your camera or upload files. The system will automatically detect the paper boundaries, auto-align to 90 degrees, and enhance the brightness for clear, readable text.")
+
+# Document Scan State Management
+if "camscanner_pages" not in st.session_state:
+    st.session_state.camscanner_pages = []
+
+def process_camscan(image_bytes):
+    """Detects page corners, warps perspective to a clean 90-degree angle, and boosts brightness."""
+    # Convert uploaded raw bytes to OpenCV Mat image
+    nparr = np.frombuffer(image_bytes, np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    original = img.copy()
+    
+    # Step 1: Pre-processing (Grayscale, Blur & Edge Detection)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    edged = cv2.Canny(blurred, 75, 200)
+    
+    # Step 2: Find contours to find document boundary
+    contours, _ = cv2.findContours(edged.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    contours = sorted(contours, key=cv2.contourArea, reverse=True)[:5]
+    
+    target_contour = None
+    for c in contours:
+        perimeter = cv2.arcLength(c, True)
+        approx = cv2.approxPolyDP(c, 0.02 * perimeter, True)
+        if len(approx) == 4:
+            target_contour = approx
+            break
+            
+    # Step 3: Perspective transform to align the sheet to 90 degrees straight
+    if target_contour is not None:
+        pts = target_contour.reshape(4, 2)
+        rect = np.zeros((4, 2), dtype="float32")
         
-        * **Platform Version:** 2.0 (Mobile Ready)
-        * **Framework:** PyMuPDF, FPDF, Streamlit
-        """)
-    
-    st.markdown("""
-    ### Interactive Capabilities Overview:
-    * **📸 Images to PDF:** Pack visual files (PNG/JPG) safely into professional PDF packages.
-    * **✍️ Text Compiler:** Feed raw txt files or direct copy-pasted blocks to build clean layouts.
-    * **🔄 Structure Parser:** Read nested tables instantly into spreadsheets or extract running paragraphs directly into editable Word docs.
-    * **🔗 Mergers & Splitting:** Concatenate arbitrary multiple files on the fly.
-    * **🔒 Security Locks:** Standard 128-bit encryption directly on the raw file buffer.
-    """)
-
-# --- 1. IMAGE TO PDF ---
-elif tool_choice == "Image to PDF Converter":
-    st.subheader("📸 Image to PDF Converter")
-    uploaded_images = st.file_uploader("Upload PNG, JPG, or JPEG files:", type=['jpg', 'jpeg', 'png'], accept_multiple_files=True)
-    
-    if uploaded_images:
-        if st.button("Convert Images"):
-            with st.spinner("Processing images..."):
-                img_list = []
-                for img in uploaded_images:
-                    try:
-                        image = Image.open(img).convert('RGB')
-                        img_list.append(image)
-                    except Exception as e:
-                        st.error(f"Format error on {img.name}: {e}")
-                
-                if img_list:
-                    pdf_output = io.BytesIO()
-                    img_list[0].save(pdf_output, format="PDF", save_all=True, append_images=img_list[1:])
-                    increment_completed_task()
-                    st.success("Conversion successful!")
-                    st.download_button(
-                        label="📥 Download PDF File", 
-                        data=pdf_output.getvalue(), 
-                        file_name="Rana_Converted.pdf"
-                    )
+        # Sort points sequence: Top-Left, Top-Right, Bottom-Right, Bottom-Left
+        s = pts.sum(axis=1)
+        rect[0] = pts[np.argmin(s)]
+        rect[2] = pts[np.argmax(s)]
+        
+        diff = np.diff(pts, axis=1)
+        rect[1] = pts[np.argmin(diff)]
+        rect[3] = pts[np.argmax(diff)]
+        
+        (tl, tr, br, bl) = rect
+        width_a = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
+        width_b = np.sqrt(((tr[0] - tl[0]) ** 2) + ((tr[1] - tl[1]) ** 2))
+        max_width = max(int(width_a), int(width_b))
+        
+        height_a = np.sqrt(((tr[0] - br[0]) ** 2) + ((tr[1] - br[1]) ** 2))
+        height_b = np.sqrt(((tl[0] - bl[0]) ** 2) + ((tl[1] - bl[1]) ** 2))
+        max_height = max(int(height_a), int(height_b))
+        
+        dst = np.array([
+            [0, 0],
+            [max_width - 1, 0],
+            [max_width - 1, max_height - 1],
+            [0, max_height - 1]], dtype="float32")
+        
+        transform_matrix = cv2.getPerspectiveTransform(rect, dst)
+        warped = cv2.warpPerspective(img, transform_matrix, (max_width, max_height))
     else:
-        st.info("Please select image files above to activate conversion.")
+        # Fallback if paper borders are not detected clearly
+        warped = original
 
-# --- 2. TEXT TO PDF ---
-elif tool_choice == "Text to PDF Compiler":
-    st.subheader("✍️ Text to PDF Compiler")
-    text_input = st.text_area("Enter your custom text layout details:", height=180)
-    uploaded_txt = st.file_uploader("Or upload a plaintext .txt file", type=['txt'])
+    # Step 4: CamScanner Brightness & Contrast Enhancer
+    # alpha (Contrast): 1.35x for pop out text, beta (Brightness): +20 for removing page shadows
+    scanned_effect = cv2.convertScaleAbs(warped, alpha=1.35, beta=20)
     
-    if st.button("Generate PDF Document"):
-        final_text = ""
-        if uploaded_txt:
-            final_text = uploaded_txt.read().decode("utf-8", errors="ignore")
-        elif text_input:
-            final_text = text_input
+    # Convert BGR back to PIL RGB format for Streamlit
+    color_corrected = cv2.cvtColor(scanned_effect, cv2.COLOR_BGR2RGB)
+    return Image.fromarray(color_corrected)
+
+# Interactive Source Picker
+input_source = st.radio("Select Image Source:", ["📷 Live Camera Capture", "📁 Upload Local Files"], horizontal=True)
+scanned_inputs = []
+
+if input_source == "📷 Live Camera Capture":
+    camera_pic = st.camera_input("Snap a paper document:")
+    if camera_pic:
+        scanned_inputs.append(camera_pic)
+else:
+    uploaded_pics = st.file_uploader("Upload Pages:", type=["jpg", "png", "jpeg"], accept_multiple_files=True)
+    if uploaded_pics:
+        scanned_inputs = uploaded_pics
+
+# Trigger Scan Processing
+if scanned_inputs:
+    if st.button("🪄 Run CamScanner Edge-Correction"):
+        with st.spinner("Aligning and enhancing your document..."):
+            processed_list = []
+            for item in scanned_inputs:
+                file_bytes = item.read()
+                processed_pil = process_camscan(file_bytes)
+                processed_list.append(processed_pil)
+            st.session_state.camscanner_pages.extend(processed_list)
+            st.success(f"Added {len(processed_list)} page(s) successfully!")
+
+# Display Scanned Queue and compile Multi-page PDF
+if st.session_state.camscanner_pages:
+    st.write("---")
+    st.write("### 📂 Scanned Document Queue")
+    
+    # Show thumbnails in columns
+    thumb_cols = st.columns(min(len(st.session_state.camscanner_pages), 6))
+    for idx, img in enumerate(st.session_state.camscanner_pages):
+        with thumb_cols[idx % len(thumb_cols)]:
+            st.image(img, caption=f"Page {idx+1}", use_container_width=True)
             
-        if final_text.strip():
-            with st.spinner("Compiling text structures..."):
-                try:
-                    pdf = FPDF()
-                    pdf.add_page()
-                    pdf.set_font("Arial", size=12)
-                    for line in final_text.split('\n'):
-                        clean_line = line.encode('latin-1', 'replace').decode('latin-1')
-                        pdf.cell(200, 10, txt=clean_line, ln=1)
-                        
-                    pdf_output = pdf.output(dest='S').encode('latin-1')
-                    increment_completed_task()
-                    st.success("PDF created successfully!")
-                    st.download_button(
-                        label="📥 Download Generated PDF", 
-                        data=pdf_output, 
-                        file_name="Rana_TextCompiled.pdf"
-                    )
-                except Exception as e:
-                    st.error(f"Engine Compilation Error: {e}")
-        else:
-            st.warning("Empty source. Provide text input or select a source .txt file.")
-
-# --- 3. PDF TO EXCEL/WORD ---
-elif tool_choice == "Extract PDF to Excel/Word":
-    st.subheader("🔄 PDF to Data Extractor")
-    uploaded_pdf = st.file_uploader("Upload target PDF file:", type=['pdf'])
-    format_type = st.radio("Choose target data output:", ["Excel Spreadsheet", "Word Document"])
+    col_act1, col_act2 = st.columns(2)
     
-    if uploaded_pdf:
-        if st.button("Extract Content"):
-            with st.spinner('Parsing vector structures...'):
-                if "Excel" in format_type:
-                    try:
-                        with pdfplumber.open(uploaded_pdf) as pdf:
-                            all_tables = []
-                            for page in pdf.pages:
-                                table = page.extract_table()
-                                if table:
-                                    all_tables.append(pd.DataFrame(table))
-                            if all_tables:
-                                df = pd.concat(all_tables)
-                                output = io.BytesIO()
-                                df.to_excel(output, index=False, engine='openpyxl')
-                                increment_completed_task()
-                                st.success("Tabular extraction completed!")
-                                st.download_button("📥 Download Excel Sheet", output.getvalue(), "rana_data.xlsx")
-                            else:
-                                st.warning("No structured data tables were detected in this PDF.")
-                    except Exception as e:
-                        st.error(f"Excel generation failed: {e}")
-                
-                elif "Word" in format_type:
-                    try:
-                        doc = Document()
-                        with pdfplumber.open(uploaded_pdf) as pdf:
-                            for page in pdf.pages:
-                                text = page.extract_text()
-                                if text: 
-                                    doc.add_paragraph(text)
-                        output = io.BytesIO()
-                        doc.save(output)
-                        increment_completed_task()
-                        st.success("Text flow extraction completed!")
-                        st.download_button("📥 Download Docx File", output.getvalue(), "rana_doc.docx")
-                    except Exception as e:
-                        st.error(f"Word doc generation failed: {e}")
-    else:
-        st.info("Upload a PDF file above to launch extraction.")
-
-# --- 4. PDF MERGER ---
-elif tool_choice == "Merge Multiple PDFs":
-    st.subheader("🔗 PDF Document Merger")
-    merge_files = st.file_uploader("Select 2 or more PDF documents:", type=['pdf'], accept_multiple_files=True)
+    with col_act1:
+        # Build multi-page PDF on the fly
+        pdf_io = io.BytesIO()
+        first_page = st.session_state.camscanner_pages[0]
+        subsequent_pages = st.session_state.camscanner_pages[1:]
+        
+        first_page.save(pdf_io, format="PDF", save_all=True, append_images=subsequent_pages)
+        pdf_io.seek(0)
+        
+        st.download_button(
+            label="📥 Download Compiled PDF Document",
+            data=pdf_io,
+            file_name="scanned_cam_document.pdf",
+            mime="application/pdf"
+        )
+        
+    with col_act2:
+        if st.button("🧹 Reset Scanner Queue"):
+            st.session_state.camscanner_pages = []
+            st.rerun()
     
-    if merge_files and len(merge_files) >= 2:
-        if st.button("Merge Files"):
-            with st.spinner("Combining streams..."):
-                try:
-                    merger = PdfMerger()
-                    for pdf in merge_files:
-                        merger.append(pdf)
-                    output = io.BytesIO()
-                    merger.write(output)
-                    increment_completed_task()
-                    st.success("PDFs combined successfully!")
-                    st.download_button("📥 Download Consolidated PDF", output.getvalue(), "rana_merged_output.pdf")
-                except Exception as e:
-                    st.error(f"Merge error: {e}")
-    else:
-        st.info("You must upload at least 2 PDF files to use the Merger tool.")
-
-# --- 5. PDF TO IMAGE ---
-elif tool_choice == "Convert PDF to PNG Image":
-    st.subheader("🖼️ PDF to Image Renderer")
-    uploaded_pdf = st.file_uploader("Upload your PDF document:", type=['pdf'])
-    
-    if uploaded_pdf:
-        try:
-            pdf_bytes = uploaded_pdf.read()
-            doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-            total_pages = len(doc)
-            
-            st.info(f"Loaded successfully. Document contains {total_pages} pages.")
-            page_num = st.number_input("Select page index to render:", min_value=1, max_value=total_pages, value=1, step=1)
-            
-            if st.button("Render Page"):
-                with st.spinner("Rasterizing vector canvas..."):
-                    page = doc.load_page(page_num - 1)
-                    pix = page.get_pixmap()
-                    img_data = pix.tobytes("png")
-                    
-                    st.image(img_data, caption=f"Page {page_num} Preview", use_container_width=True)
-                    increment_completed_task()
-                    st.download_button(
-                        label=f"📥 Download Page {page_num} PNG",
-                        data=img_data,
-                        file_name=f"Rana_Page_{page_num}.png",
-                        mime="image/png"
-                    )
-        except Exception as e:
-            st.error(f"Unable to read PDF file structures: {e}")
-    else:
-        st.info("Upload a PDF to select a page and export it to an image.")
-
-# --- 6. PROTECT PDF ---
-elif tool_choice == "Encrypt & Protect PDF":
-    st.subheader("🔒 PDF Encryption Lock")
-    uploaded_pdf = st.file_uploader("Upload target PDF file:", type=['pdf'])
-    password = st.text_input("Enter your desired user password:", type="password")
-    
-    if uploaded_pdf and password:
-        if st.button("Apply Cryptographic Lock"):
-            with st.spinner("Securing file streams..."):
-                try:
-                    reader = PdfReader(uploaded_pdf)
-                    writer = PdfWriter()
-                    for page in reader.pages:
-                        writer.add_page(page)
-                    writer.encrypt(password)
-                    output = io.BytesIO()
-                    writer.write(output)
-                    
-                    increment_completed_task()
-                    st.success("File has been encrypted!")
-                    st.download_button(
-                        label="📥 Download Secured PDF",
-                        data=output.getvalue(),
-                        file_name="Rana_Locked.pdf",
-                        mime="application/pdf"
-                    )
-                except Exception as e:
-                    st.error(f"Encryption failed: {e}")
-    elif uploaded_pdf and not password:
-        st.warning("Password cannot be blank.")
-    else:
-        st.info("Upload your document and input a passkey to secure the file.")
-
-
-# --- Detail Info Section (Moved below as requested) ---
-st.markdown("---")
-st.markdown("""
-<div style="font-size: 0.9em; color: #5f6368; line-height: 1.6; text-align: justify; margin-bottom: 25px;">
-    <strong>Rana PDF Converter Pro</strong> features a secure local file manipulation environment. Your uploaded assets are processed directly in the system memory. No telemetry or server-side logging database is used, guaranteeing that sensitive documents remain under your absolute control.
-</div>
-""", unsafe_allow_html=True)
-
-
-# ==================== ADVANCED TRAFFIC ANALYTICS (3 Metrics) ====================
-st.markdown("""
-<div style="text-align: center; margin-bottom: 15px;">
-    <span style="background-color: #e8f0fe; color: #1a73e8; padding: 5px 15px; border-radius: 20px; font-size: 0.85em; font-weight: bold; border: 1px solid #aecbfa;">
-        📊 Live Platform Performance Metrics
-    </span>
-</div>
-""", unsafe_allow_html=True)
-
-# Main page lower panel for the three requested metrics
-col_t1, col_t2, col_t3 = st.columns(3)
-
-with col_t1:
-    st.metric(label="👥 All Traffic (Visits)", value=f"{analytics['traffic']:,}")
-
-with col_t2:
-    st.metric(label="✅ Complete (Tasks)", value=f"{analytics['completed']:,}")
-
-with col_t3:
-    st.metric(label="⚡ User (Active Sessions)", value=f"{analytics['users']:,}")

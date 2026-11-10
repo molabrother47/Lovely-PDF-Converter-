@@ -1,8 +1,3 @@
-Screenshot mein do major masle nazar aa rahe hain:
- * Compilation Error (string argument without an encoding): Python 3 / fpdf mein text pass karte waqt encoding ka masla aa raha hai jab text ke andar brackets ya special symbols ({, }, code snippets) hon.
- * Text Formatting & Size Issue: Aap chahte hain ke user text area mein jo bhi text likhe ya paste kare, uska size aur style (Bold/Italic/Normal) exact waisa hi PDF par apply ho (aur size ka jo slider ho, text par properly scale ho).
-In dono maslo ko 100% fix kar diya hai. Ab FPDF ka set_font_size aur proper string encoding use ki gayi hai taaki koi error na aaye aur text formatting bilkul theek kaam kare.
-Yahan aapka Fully Fixed & Updated Code hai:
 import io
 import os
 import fitz  # PyMuPDF
@@ -267,7 +262,7 @@ elif st.session_state.current_page == "Text to PDF Compiler":
                     pdf = FPDF()
                     pdf.add_page()
                     
-                    # Correct style mapping for FPDF
+                    # Style mapping for FPDF
                     f_style = ''
                     if font_style_option == "Bold":
                         f_style = 'B'
@@ -277,10 +272,11 @@ elif st.session_state.current_page == "Text to PDF Compiler":
                     # Apply font size and style correctly
                     pdf.set_font("Arial", style=f_style, size=float(font_size))
                     
-                    # Properly encode text to avoid any string argument errors
+                    # Encode text properly and write using multi_cell for accurate sizing
                     for line in final_text.split('\n'):
                         clean_line = line.encode('latin-1', 'replace').decode('latin-1')
-                        pdf.multi_cell(0, font_size * 0.6 + 4, txt=clean_line)
+                        line_height = font_size * 0.45 + 3
+                        pdf.multi_cell(0, line_height, txt=clean_line)
                         
                     pdf_bytes = bytes(pdf.output())
                     increment_completed_task()
@@ -417,38 +413,4 @@ elif st.session_state.current_page == "Convert PDF to PNG":
             total_pages = len(doc)
             orig_name = os.path.splitext(uploaded_pdf_img.name)[0]
             st.info(f"Loaded successfully. Total pages: {total_pages}")
-            page_num = st.number_input("Select page index to render:", min_value=1, max_value=total_pages, value=1, step=1)
-            if st.button("Render Page to PNG"):
-                page = doc.load_page(page_num - 1)
-                pix = page.get_pixmap()
-                img_data = pix.tobytes("png")
-                st.image(img_data, caption=f"Page {page_num} Preview", use_container_width=True)
-                increment_completed_task()
-                st.download_button(f"📥 Download Page {page_num} PNG", img_data, f"{orig_name}_page_{page_num}.png", mime="image/png")
-            doc.close()
-        except Exception as e:
-            st.error(f"Error reading PDF: {e}")
-
-elif st.session_state.current_page == "Encrypt & Protect PDF":
-    st.subheader("🔒 PDF Encryption & Security Lock")
-    uploaded_pdf_lock = st.file_uploader("Upload target PDF document:", type=['pdf'])
-    password = st.text_input("Enter secure encryption password:", type="password")
-    if uploaded_pdf_lock and password:
-        orig_name = os.path.splitext(uploaded_pdf_lock.name)[0]
-        if st.button("Apply Security Lock"):
-            with st.spinner("Applying cryptographic encryption..."):
-                try:
-                    reader = PdfReader(uploaded_pdf_lock)
-                    writer = PdfWriter()
-                    for page in reader.pages:
-                        writer.add_page(page)
-                    writer.encrypt(password)
-                    output = io.BytesIO()
-                    writer.write(output)
-                    output.seek(0)
-                    increment_completed_task()
-                    st.success("PDF encrypted successfully!")
-                    st.download_button("📥 Download Secured PDF", output.getvalue(), f"{orig_name}_secured.pdf", mime="application/pdf")
-                except Exception as e:
-                    st.error(f"Encryption failed: {e}")
-
+            page_num = st.number_input("Select page index to render:", min_value=1, max_value=to

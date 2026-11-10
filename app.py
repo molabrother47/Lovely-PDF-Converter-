@@ -413,4 +413,38 @@ elif st.session_state.current_page == "Convert PDF to PNG":
             total_pages = len(doc)
             orig_name = os.path.splitext(uploaded_pdf_img.name)[0]
             st.info(f"Loaded successfully. Total pages: {total_pages}")
-            page_num = st.number_input("Select page index to render:", min_value=1, max_value=to
+            page_num = st.number_input("Select page index to render:", min_value=1, max_value=total_pages, value=1, step=1)
+            if st.button("Render Page to PNG"):
+                page = doc.load_page(page_num - 1)
+                pix = page.get_pixmap()
+                img_data = pix.tobytes("png")
+                st.image(img_data, caption=f"Page {page_num} Preview", use_container_width=True)
+                increment_completed_task()
+                st.download_button(f"📥 Download Page {page_num} PNG", img_data, f"{orig_name}page{page_num}.png", mime="image/png")
+            doc.close()
+        except Exception as e:
+            st.error(f"Error reading PDF: {e}")
+
+elif st.session_state.current_page == "Encrypt & Protect PDF":
+    st.subheader("🔒 PDF Encryption & Security Lock")
+    uploaded_pdf_lock = st.file_uploader("Upload target PDF document:", type=['pdf'])
+    password = st.text_input("Enter secure encryption password:", type="password")
+    if uploaded_pdf_lock and password:
+        orig_name = os.path.splitext(uploaded_pdf_lock.name)[0]
+        if st.button("Apply Security Lock"):
+            with st.spinner("Applying cryptographic encryption..."):
+                try:
+                    reader = PdfReader(uploaded_pdf_lock)
+                    writer = PdfWriter()
+                    for page in reader.pages:
+                        writer.add_page(page)
+                    writer.encrypt(password)
+                    output = io.BytesIO()
+                    writer.write(output)
+                    output.seek(0)
+                    increment_completed_task()
+                    st.success("PDF encrypted successfully!")
+                    st.download_button("📥 Download Secured PDF", output.getvalue(), f"{orig_name}_secured.pdf", mime="application/pdf")
+                except Exception as e:
+                    st.error(f"Encryption failed: {e}")
+                    

@@ -76,7 +76,7 @@ def increment_completed_task():
 
 analytics = get_real_analytics()
 
-# --- Custom Professional Styling (Clean & Modern UI) ---
+# --- Custom Professional Styling & Multi-Color Tool Cards ---
 st.markdown("""
     <style>
     .stButton>button { 
@@ -96,14 +96,16 @@ st.markdown("""
     }
     h1 { color: #1a73e8; font-family: 'Helvetica Neue', Arial, sans-serif; text-align: center; font-weight: 800; }
     .dev-by { text-align: center; font-size: 1.1em; color: #5f6368; font-weight: bold; margin-top: -10px; margin-bottom: 20px; }
-    .main-container {
-        padding: 25px;
-        border-radius: 12px;
-        background-color: #ffffff;
-        border: 1px solid #dadce0;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-        margin-bottom: 20px;
-    }
+    
+    /* Unique Colored Tool Cards for Home Page */
+    .card-home { padding: 22px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+    .card-img { background-color: #e8f0fe; border-left: 6px solid #1a73e8; }
+    .card-txt { background-color: #fce8e6; border-left: 6px solid #d93025; }
+    .card-ext { background-color: #e6f4ea; border-left: 6px solid #137333; }
+    .card-mrg { background-color: #fef7e0; border-left: 6px solid #f9ab00; }
+    .card-png { background-color: #f3e8fd; border-left: 6px solid #9334e6; }
+    .card-lck { background-color: #e8fdea; border-left: 6px solid #0f9d58; }
+    
     div[data-testid="stMetricValue"] { font-size: 24px !important; color: #1a73e8 !important; text-align: center; font-weight: bold; }
     div[data-testid="stMetricLabel"] { font-size: 14px !important; text-align: center; font-weight: 600; }
     </style>
@@ -113,12 +115,12 @@ st.markdown("""
 st.markdown("<h1>RANA PDF CONVERTER PRO</h1>", unsafe_allow_html=True)
 st.markdown("<div class='dev-by'>DEVELOPED BY: RANA ABUBAKER</div>", unsafe_allow_html=True)
 
-# --- Sidebar Navigation (Clean & Organized) ---
+# --- Sidebar Navigation ---
 st.sidebar.markdown("### 🧰 Navigation Dashboard")
 tool_choice = st.sidebar.radio(
     "Select a Professional Tool:",
     [
-        "🏠 Home & Overview",
+        "🏠 Home & All Tools",
         "📸 Image to PDF Converter", 
         "✍️ Text to PDF Compiler", 
         "🔄 Extract PDF to Excel/Word", 
@@ -135,35 +137,188 @@ st.sidebar.metric(label="Tasks Completed", value=f"{analytics['completed']:,}")
 
 # ==================== TOOL IMPLEMENTATIONS ====================
 
-# 1. HOME & OVERVIEW
-if tool_choice == "🏠 Home & Overview":
+# 1. HOME & ALL TOOLS DASHBOARD VIEW
+if tool_choice == "🏠 Home & All Tools":
     st.markdown("""
-    <div class="main-container">
-        <h3>Welcome to Rana PDF Converter Pro</h3>
-        <p style="color: #5f6368; line-height: 1.6;">
-            A high-performance, browser-based document utility suite designed for absolute privacy, speed, and ease of use. Your files are processed securely in memory without server storage.
+    <div style="text-align: center; padding: 15px; background-color: #f8f9fa; border-radius: 10px; margin-bottom: 25px; border: 1px solid #dadce0;">
+        <h3 style="color: #1a73e8; margin-bottom: 5px;">Welcome to Rana PDF Converter Pro</h3>
+        <p style="color: #5f6368; font-size: 1.05em; margin: 0;">
+            Explore all professional browser-based document utilities below or use the sidebar for dedicated single-tool access.
         </p>
-        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-        <h4>🌟 Key Features Available:</h4>
-        <ul style="color: #3c4043; line-height: 1.8;">
-            <li><strong>Image to PDF:</strong> Combine multiple PNG/JPG images into a single professional document.</li>
-            <li><strong>Text Compiler with Formatting:</strong> Generate custom PDFs with adjustable font sizes, bold, and italic styling.</li>
-            <li><strong>Data Extractor:</strong> Extract tables and text from PDFs directly into Excel spreadsheets or Word documents.</li>
-            <li><strong>PDF Merger:</strong> Combine multiple PDF files seamlessly keeping original naming structure.</li>
-            <li><strong>PDF to Image:</strong> Render specific PDF pages into high-resolution PNG images.</li>
-            <li><strong>PDF Encryption:</strong> Secure sensitive documents with strong password protection.</li>
-        </ul>
     </div>
     """, unsafe_allow_html=True)
 
-# 2. IMAGE TO PDF
+    # --- 1. IMAGE TO PDF CARD ---
+    st.markdown('<div class="card-home card-img">', unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #1a73e8;'>📸 Image to PDF Converter</h3>", unsafe_allow_html=True)
+    uploaded_images_h = st.file_uploader("Upload PNG, JPG, or JPEG files:", type=['jpg', 'jpeg', 'png'], accept_multiple_files=True, key="h_img")
+    if uploaded_images_h:
+        c_name_h1 = st.text_input("Output File Name:", value="Converted_Document", key="h_img_name")
+        if st.button("Convert Images to PDF", key="btn_h_img"):
+            with st.spinner("Processing images..."):
+                try:
+                    img_list = [Image.open(img).convert('RGB') for img in uploaded_images_h]
+                    pdf_output = io.BytesIO()
+                    img_list[0].save(pdf_output, format="PDF", save_all=True, append_images=img_list[1:])
+                    pdf_output.seek(0)
+                    increment_completed_task()
+                    st.success("Conversion successful!")
+                    st.download_button("📥 Download Converted PDF", pdf_output.getvalue(), f"{c_name_h1}.pdf", mime="application/pdf", key="dl_h_img")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # --- 2. TEXT TO PDF CARD ---
+    st.markdown('<div class="card-home card-txt">', unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #d93025;'>✍️ Text to PDF Compiler & Stylist</h3>", unsafe_allow_html=True)
+    col_th1, col_th2 = st.columns(2)
+    with col_th1:
+        f_size_h = st.slider("Select Font Size:", min_value=8, max_value=24, value=12, step=1, key="h_fsize")
+    with col_th2:
+        f_style_h = st.selectbox("Select Text Style:", ["Normal", "Bold", "Italic"], key="h_fstyle")
+    
+    txt_input_h = st.text_area("Enter your custom text here:", height=120, key="h_txt")
+    up_txt_h = st.file_uploader("Or upload plain text file (.txt):", type=['txt'], key="h_txt_file")
+    
+    if st.button("Generate Formatted PDF", key="btn_h_txt"):
+        final_txt_h = up_txt_h.read().decode("utf-8", errors="ignore") if up_txt_h else txt_input_h
+        if final_txt_h.strip():
+            with st.spinner("Compiling styled text..."):
+                try:
+                    pdf = FPDF()
+                    pdf.add_page()
+                    sty = 'B' if f_style_h == "Bold" else ('I' if f_style_h == "Italic" else '')
+                    pdf.set_font("Arial", style=sty, size=f_size_h)
+                    for line in final_txt_h.split('\n'):
+                        pdf.cell(0, f_size_h + 4, txt=line.encode('latin-1', 'replace').decode('latin-1'), ln=1)
+                    pdf_bytes_h = bytes(pdf.output())
+                    increment_completed_task()
+                    st.success("Formatted PDF created successfully!")
+                    st.download_button("📥 Download Styled PDF", pdf_bytes_h, "Formatted_Text_Document.pdf", mime="application/pdf", key="dl_h_txt")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+        else:
+            st.warning("Please enter text or upload a file.")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # --- 3. EXTRACT PDF TO EXCEL/WORD CARD ---
+    st.markdown('<div class="card-home card-ext">', unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #137333;'>🔄 PDF to Data Extractor</h3>", unsafe_allow_html=True)
+    up_pdf_ext_h = st.file_uploader("Upload target PDF file:", type=['pdf'], key="h_ext_pdf")
+    fmt_h = st.radio("Choose target export format:", ["Excel Spreadsheet (.xlsx)", "Word Document (.docx)"], key="h_fmt")
+    
+    if up_pdf_ext_h and st.button("Extract Content", key="btn_h_ext"):
+        orig_n = os.path.splitext(up_pdf_ext_h.name)[0]
+        with st.spinner("Extracting data..."):
+            if "Excel" in fmt_h:
+                try:
+                    with pdfplumber.open(up_pdf_ext_h) as pdf:
+                        tables = [pd.DataFrame(p.extract_table()) for p in pdf.pages if p.extract_table()]
+                    if tables:
+                        df = pd.concat(tables, ignore_index=True)
+                        out = io.BytesIO()
+                        df.to_excel(out, index=False, engine='openpyxl')
+                        out.seek(0)
+                        increment_completed_task()
+                        st.success("Extraction completed!")
+                        st.download_button("📥 Download Excel Sheet", out.getvalue(), f"{orig_n}_extracted.xlsx", key="dl_h_excel")
+                    else:
+                        st.warning("No structured data tables found.")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+            else:
+                try:
+                    doc = Document()
+                    with pdfplumber.open(up_pdf_ext_h) as pdf:
+                        for p in pdf.pages:
+                            txt = p.extract_text()
+                            if txt: doc.add_paragraph(txt)
+                    out = io.BytesIO()
+                    doc.save(out)
+                    out.seek(0)
+                    increment_completed_task()
+                    st.success("Extraction completed!")
+                    st.download_button("📥 Download Word Document", out.getvalue(), f"{orig_n}_extracted.docx", key="dl_h_word")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # --- 4. MERGE MULTIPLE PDFS CARD ---
+    st.markdown('<div class="card-home card-mrg">', unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #b06000;'>🔗 PDF Document Merger</h3>", unsafe_allow_html=True)
+    merge_files_h = st.file_uploader("Select PDF files to merge (2 or more):", type=['pdf'], accept_multiple_files=True, key="h_merge")
+    if merge_files_h and len(merge_files_h) >= 2:
+        c_mrg_name = st.text_input("Enter Merged File Name:", value="Merged_Document", key="h_mrg_name")
+        if st.button("Merge PDF Files", key="btn_h_mrg"):
+            with st.spinner("Merging files..."):
+                try:
+                    merger = PdfMerger()
+                    for f in merge_files_h:
+                        merger.append(f)
+                    out = io.BytesIO()
+                    merger.write(out)
+                    out.seek(0)
+                    increment_completed_task()
+                    st.success("PDFs combined successfully!")
+                    st.download_button("📥 Download Merged PDF", out.getvalue(), f"{c_mrg_name}.pdf", mime="application/pdf", key="dl_h_mrg")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # --- 5. PDF TO PNG IMAGE CARD ---
+    st.markdown('<div class="card-home card-png">', unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #7b1fa2;'>🖼️ Convert PDF to PNG Image</h3>", unsafe_allow_html=True)
+    up_pdf_img_h = st.file_uploader("Upload PDF document to render:", type=['pdf'], key="h_pdf_img")
+    if up_pdf_img_h:
+        try:
+            pdf_bytes_h = up_pdf_img_h.read()
+            doc_h = fitz.open(stream=pdf_bytes_h, filetype="pdf")
+            tot_p = len(doc_h)
+            orig_n = os.path.splitext(up_pdf_img_h.name)[0]
+            st.info(f"Total pages available: {tot_p}")
+            p_idx = st.number_input("Select page number:", min_value=1, max_value=tot_p, value=1, step=1, key="h_pidx")
+            if st.button("Render Page to Image", key="btn_h_png"):
+                page = doc_h.load_page(p_idx - 1)
+                pix = page.get_pixmap()
+                img_d = pix.tobytes("png")
+                st.image(img_d, caption=f"Page {p_idx} Preview", use_container_width=True)
+                increment_completed_task()
+                st.download_button(f"📥 Download Page {p_idx} PNG", img_d, f"{orig_n}_page_{p_idx}.png", mime="image/png", key="dl_h_png")
+            doc_h.close()
+        except Exception as e:
+            st.error(f"Error: {e}")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # --- 6. ENCRYPT & PROTECT PDF CARD ---
+    st.markdown('<div class="card-home card-lck">', unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #0b8043;'>🔒 Encrypt & Protect PDF</h3>", unsafe_allow_html=True)
+    up_lck_h = st.file_uploader("Upload target PDF to secure:", type=['pdf'], key="h_lck_pdf")
+    pwd_h = st.text_input("Enter secure encryption password:", type="password", key="h_pwd")
+    if up_lck_h and pwd_h:
+        orig_n = os.path.splitext(up_lck_h.name)[0]
+        if st.button("Apply Security Lock", key="btn_h_lck"):
+            with st.spinner("Securing file..."):
+                try:
+                    reader = PdfReader(up_lck_h)
+                    writer = PdfWriter()
+                    for page in reader.pages:
+                        writer.add_page(page)
+                    writer.encrypt(pwd_h)
+                    out = io.BytesIO()
+                    writer.write(out)
+                    out.seek(0)
+                    increment_completed_task()
+                    st.success("File encrypted successfully!")
+                    st.download_button("📥 Download Secured PDF", out.getvalue(), f"{orig_n}_secured.pdf", mime="application/pdf", key="dl_h_lck")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# ==================== DEDICATED TOOL IMPLEMENTATIONS (SIDEBAR SELECTION) ====================
+
 elif tool_choice == "📸 Image to PDF Converter":
-    st.markdown('<div class="main-container">', unsafe_allow_html=True)
     st.subheader("📸 Image to PDF Converter")
-    st.write("Upload your images (PNG, JPG, JPEG) to compile them into a single PDF document.")
-    
     uploaded_images = st.file_uploader("Choose image files:", type=['jpg', 'jpeg', 'png'], accept_multiple_files=True)
-    
     if uploaded_images:
         custom_name = st.text_input("Enter Output File Name:", value="Converted_Document")
         if st.button("Convert Images to PDF"):
@@ -175,23 +330,12 @@ elif tool_choice == "📸 Image to PDF Converter":
                     pdf_output.seek(0)
                     increment_completed_task()
                     st.success("Conversion successful!")
-                    st.download_button(
-                        label="📥 Download Converted PDF", 
-                        data=pdf_output.getvalue(), 
-                        file_name=f"{custom_name}.pdf",
-                        mime="application/pdf"
-                    )
+                    st.download_button("📥 Download Converted PDF", pdf_output.getvalue(), f"{custom_name}.pdf", mime="application/pdf")
                 except Exception as e:
-                    st.error(f"Error processing images: {e}")
-    st.markdown('</div>', unsafe_allow_html=True)
+                    st.error(f"Error: {e}")
 
-# 3. TEXT TO PDF (WITH EDITING & FORMATTING CONTROLS)
 elif tool_choice == "✍️ Text to PDF Compiler":
-    st.markdown('<div class="main-container">', unsafe_allow_html=True)
     st.subheader("✍️ Text to PDF Compiler & Stylist")
-    st.write("Customize your text formatting (Font size, Style) and compile a professional PDF document.")
-    
-    # Text Formatting Controls Toolbar
     col_f1, col_f2 = st.columns(2)
     with col_f1:
         font_size = st.slider("Select Font Size:", min_value=8, max_value=24, value=12, step=1)
@@ -204,52 +348,30 @@ elif tool_choice == "✍️ Text to PDF Compiler":
     if st.button("Generate Formatted PDF"):
         final_text = uploaded_txt.read().decode("utf-8", errors="ignore") if uploaded_txt else text_input
         if final_text.strip():
-            with st.spinner("Compiling styled text structures..."):
+            with st.spinner("Compiling styled text..."):
                 try:
                     pdf = FPDF()
                     pdf.add_page()
-                    
-                    # Map style options to FPDF font tags ('', 'B', 'I')
-                    f_style = ''
-                    if font_style_option == "Bold":
-                        f_style = 'B'
-                    elif font_style_option == "Italic":
-                        f_style = 'I'
-                        
+                    f_style = 'B' if font_style_option == "Bold" else ('I' if font_style_option == "Italic" else '')
                     pdf.set_font("Arial", style=f_style, size=font_size)
-                    
                     for line in final_text.split('\n'):
-                        clean_line = line.encode('latin-1', 'replace').decode('latin-1')
-                        # Dynamic line height adjustment based on font size
-                        pdf.cell(0, font_size + 4, txt=clean_line, ln=1)
-                        
+                        pdf.cell(0, font_size + 4, txt=line.encode('latin-1', 'replace').decode('latin-1'), ln=1)
                     pdf_bytes = bytes(pdf.output())
                     increment_completed_task()
                     st.success("Formatted PDF created successfully!")
-                    st.download_button(
-                        label="📥 Download Styled PDF", 
-                        data=pdf_bytes, 
-                        file_name="Formatted_Text_Document.pdf",
-                        mime="application/pdf"
-                    )
+                    st.download_button("📥 Download Styled PDF", pdf_bytes, "Formatted_Text_Document.pdf", mime="application/pdf")
                 except Exception as e:
-                    st.error(f"Compilation Error: {e}")
+                    st.error(f"Error: {e}")
         else:
-            st.warning("Please enter some text or upload a text file first.")
-    st.markdown('</div>', unsafe_allow_html=True)
+            st.warning("Please enter text or upload a file.")
 
-# 4. EXTRACT PDF TO EXCEL/WORD
 elif tool_choice == "🔄 Extract PDF to Excel/Word":
-    st.markdown('<div class="main-container">', unsafe_allow_html=True)
     st.subheader("🔄 PDF to Data Extractor")
-    st.write("Extract structured tables or text content from your PDF documents keeping original file names.")
-    
     uploaded_pdf_ext = st.file_uploader("Upload target PDF file:", type=['pdf'])
     format_type = st.radio("Choose target export format:", ["Excel Spreadsheet (.xlsx)", "Word Document (.docx)"])
-    
     if uploaded_pdf_ext and st.button("Extract Content"):
         orig_name = os.path.splitext(uploaded_pdf_ext.name)[0]
-        with st.spinner('Extracting structures...'):
+        with st.spinner("Extracting..."):
             if "Excel" in format_type:
                 try:
                     with pdfplumber.open(uploaded_pdf_ext) as pdf:
@@ -263,9 +385,9 @@ elif tool_choice == "🔄 Extract PDF to Excel/Word":
                         st.success("Extraction completed!")
                         st.download_button("📥 Download Excel Sheet", output.getvalue(), f"{orig_name}_extracted.xlsx")
                     else:
-                        st.warning("No structured data tables were detected in this PDF.")
+                        st.warning("No structured tables found.")
                 except Exception as e:
-                    st.error(f"Excel extraction failed: {e}")
+                    st.error(f"Error: {e}")
             else:
                 try:
                     doc = Document()
@@ -280,21 +402,15 @@ elif tool_choice == "🔄 Extract PDF to Excel/Word":
                     st.success("Extraction completed!")
                     st.download_button("📥 Download Word Document", output.getvalue(), f"{orig_name}_extracted.docx")
                 except Exception as e:
-                    st.error(f"Word extraction failed: {e}")
-    st.markdown('</div>', unsafe_allow_html=True)
+                    st.error(f"Error: {e}")
 
-# 5. MERGE MULTIPLE PDFS
 elif tool_choice == "🔗 Merge Multiple PDFs":
-    st.markdown('<div class="main-container">', unsafe_allow_html=True)
     st.subheader("🔗 PDF Document Merger")
-    st.write("Combine two or more PDF documents into a single cohesive file.")
-    
     merge_files = st.file_uploader("Select PDF files to merge:", type=['pdf'], accept_multiple_files=True)
-    
     if merge_files and len(merge_files) >= 2:
         custom_merge_name = st.text_input("Enter Merged File Name:", value="Merged_Document")
         if st.button("Merge PDF Files"):
-            with st.spinner("Combining streams..."):
+            with st.spinner("Merging..."):
                 try:
                     merger = PdfMerger()
                     for pdf in merge_files:
@@ -306,61 +422,38 @@ elif tool_choice == "🔗 Merge Multiple PDFs":
                     st.success("PDFs combined successfully!")
                     st.download_button("📥 Download Merged PDF", output.getvalue(), f"{custom_merge_name}.pdf", mime="application/pdf")
                 except Exception as e:
-                    st.error(f"Merge error: {e}")
-    elif merge_files and len(merge_files) < 2:
-        st.info("Please select at least 2 PDF files to perform a merge.")
-    st.markdown('</div>', unsafe_allow_html=True)
+                    st.error(f"Error: {e}")
 
-# 6. PDF TO PNG IMAGE
 elif tool_choice == "🖼️ Convert PDF to PNG":
-    st.markdown('<div class="main-container">', unsafe_allow_html=True)
     st.subheader("🖼️ PDF to PNG Image Renderer")
-    st.write("Render any page of your PDF into a high-quality PNG image keeping the original file name prefix.")
-    
     uploaded_pdf_img = st.file_uploader("Upload PDF document:", type=['pdf'])
-    
     if uploaded_pdf_img:
         try:
             pdf_bytes = uploaded_pdf_img.read()
             doc = fitz.open(stream=pdf_bytes, filetype="pdf")
             total_pages = len(doc)
             orig_name = os.path.splitext(uploaded_pdf_img.name)[0]
-            
-            st.info(f"Document loaded successfully. Total pages: {total_pages}")
-            page_num = st.number_input("Select page number to render:", min_value=1, max_value=total_pages, value=1, step=1)
-            
+            st.info(f"Total pages: {total_pages}")
+            page_num = st.number_input("Select page number:", min_value=1, max_value=total_pages, value=1, step=1)
             if st.button("Render Page to Image"):
-                with st.spinner("Rasterizing vector canvas..."):
-                    page = doc.load_page(page_num - 1)
-                    pix = page.get_pixmap()
-                    img_data = pix.tobytes("png")
-                    
-                    st.image(img_data, caption=f"Page {page_num} Preview", use_container_width=True)
-                    increment_completed_task()
-                    st.download_button(
-                        label=f"📥 Download Page {page_num} PNG",
-                        data=img_data,
-                        file_name=f"{orig_name}_page_{page_num}.png",
-                        mime="image/png"
-                    )
+                page = doc.load_page(page_num - 1)
+                pix = page.get_pixmap()
+                img_data = pix.tobytes("png")
+                st.image(img_data, caption=f"Page {page_num} Preview", use_container_width=True)
+                increment_completed_task()
+                st.download_button(f"📥 Download Page {page_num} PNG", img_data, f"{orig_name}_page_{page_num}.png", mime="image/png")
             doc.close()
         except Exception as e:
-            st.error(f"Error reading PDF structures: {e}")
-    st.markdown('</div>', unsafe_allow_html=True)
+            st.error(f"Error: {e}")
 
-# 7. ENCRYPT & PROTECT PDF
 elif tool_choice == "🔒 Encrypt & Protect PDF":
-    st.markdown('<div class="main-container">', unsafe_allow_html=True)
     st.subheader("🔒 PDF Encryption & Security Lock")
-    st.write("Apply strong 128-bit password encryption to your PDF document securely.")
-    
     uploaded_pdf_lock = st.file_uploader("Upload target PDF file:", type=['pdf'])
     password = st.text_input("Enter secure password:", type="password")
-    
     if uploaded_pdf_lock and password:
         orig_name = os.path.splitext(uploaded_pdf_lock.name)[0]
         if st.button("Apply Cryptographic Lock"):
-            with st.spinner("Securing file streams..."):
+            with st.spinner("Securing file..."):
                 try:
                     reader = PdfReader(uploaded_pdf_lock)
                     writer = PdfWriter()
@@ -370,17 +463,8 @@ elif tool_choice == "🔒 Encrypt & Protect PDF":
                     output = io.BytesIO()
                     writer.write(output)
                     output.seek(0)
-                    
                     increment_completed_task()
-                    st.success("File has been encrypted successfully!")
-                    st.download_button(
-                        label="📥 Download Secured PDF",
-                        data=output.getvalue(),
-                        file_name=f"{orig_name}_secured.pdf",
-                        mime="application/pdf"
-                    )
+                    st.success("File encrypted successfully!")
+                    st.download_button("📥 Download Secured PDF", output.getvalue(), f"{orig_name}_secured.pdf", mime="application/pdf")
                 except Exception as e:
-                    st.error(f"Encryption failed: {e}")
-    elif uploaded_pdf_lock and not password:
-        st.warning("Please enter a password to encrypt the file.")
-    st.markdown('</div>', unsafe_allow_html=True)
+                    st.error(f"Error: {e}")
